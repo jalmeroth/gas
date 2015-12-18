@@ -1,0 +1,1 @@
+This project inspired by [this post](http://googleappsdeveloper.blogspot.com/2015/12/advanced-development-process-with-apps.html)
