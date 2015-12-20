@@ -33,6 +33,8 @@ class gas(object):
         scope = ['https://www.googleapis.com/auth/drive','https://www.googleapis.com/auth/drive.scripts']
         
         self.auth = auth.Authenticator(client_id, client_secret, scope, tokens)
+        
+        self.contentType = 'application/vnd.google-apps.script+json'
     
     def create(self, data = None):
         """docstring for create"""
@@ -45,7 +47,7 @@ class gas(object):
         options = {
             'method': 'POST',
             'headers': {
-                'Content-Type': 'application/vnd.google-apps.script+json'
+                'Content-Type': self.contentType
             },
             'params': url_params,
             'data': data
@@ -70,7 +72,7 @@ class gas(object):
         options = {
             'method': 'PUT',
             'headers': {
-                'Content-Type': 'application/vnd.google-apps.script+json'
+                'Content-Type': self.contentType
             },
             'data': data
         }
@@ -114,8 +116,25 @@ def main():
         oldData = myGAS.export(targetFile)
         
         if newData and oldData:
-            # TODO: iterate through all of them
-            newData['files'][0]['id'] = oldData['files'][0]['id']
+            
+            for i in range(len(newData['files'])):
+                fileData = newData['files'][i]
+                fileName = fileData.get('name')
+                
+                try: # get first entry in oldData['files'] that has the same fileName
+                    fileId = (item.get('id') for item in oldData['files'] if item["name"] == fileName).next()
+                except StopIteration:
+                    fileId = None
+                
+                if fileId: # file already exists
+                    # override fileId, will cause a file update
+                    fileData['id'] = fileId
+                else: # file did not exist, no id will create it
+                    del fileData['id']
+            
+            logger.debug('oldData: %s', json.dumps(oldData))
+            logger.debug('newData: %s', json.dumps(newData))
+            
             result = myGAS.update(targetFile, json.dumps(newData))
         elif newData:
             result = myGAS.create(json.dumps(newData))
@@ -123,6 +142,9 @@ def main():
             result = "Nothing to do."
         
         print result
+    
+    else:
+        parser.print_help()
 
 if __name__ == '__main__':
     try:
